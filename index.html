@@ -1,69 +1,237 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meeting Room Booking</title>
+    <title>Warehouse Management System</title>
     <link rel="stylesheet" href="style.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Meeting Room Booking</h1>
-        <p>Scan the QR code on the door to book a slot.</p>
-        
-        <div id="qr-container">
-            <div id="qrcode"></div>
-        </div>
-
-        <div class="custom-time-section">
-            <h2>Book a Time Slot</h2>
-            <div class="custom-form">
-                <div class="form-group">
-                    <label for="start-time">Start Time:</label>
-                    <input type="time" id="start-time" name="start-time" required>
-                </div>
-                <div class="form-group">
-                    <label for="duration">Duration:</label>
-                    <select id="duration">
-                        <option value="30">30 minutes</option>
-                        <option value="60">1 hour</option>
-                        <option value="90">1 hour 30 mins</option>
-                        <option value="120">2 hours</option>
-                    </select>
-                </div>
-                <button id="book-time-btn">Book Selected Time</button>
-            </div>
-        </div>
-
-        <div class="booked-times-section">
-            <h2>Today's Booked Times</h2>
-            <div id="booked-times-list" class="time-slots">
-                <p>Loading bookings...</p>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <h1>Warehouse Management System</h1>
+            <div class="login-form">
+                <input type="password" id="passwordInput" placeholder="Enter password" />
+                <button onclick="login()">Login</button>
+                <div id="loginError" class="error-message"></div>
             </div>
         </div>
     </div>
 
-    <div id="booking-modal" class="modal">
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app hidden">
+        <header>
+            <h1>Warehouse Management System</h1>
+            <button onclick="logout()" class="logout-btn">Logout</button>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="tab-btn active" onclick="showTab('items')">Items</button>
+            <button class="tab-btn" onclick="showTab('add-item')">Add Item</button>
+            <button class="tab-btn" onclick="showTab('activity')">Activity Log</button>
+        </nav>
+
+        <!-- Items Tab -->
+        <div id="itemsTab" class="tab-content active">
+            <div class="filters">
+                <label for="entityFilter">Filter by Entity:</label>
+                <select id="entityFilter" onchange="filterItems()">
+                    <option value="">All Entities</option>
+                    <option value="Volunteer.krd">Volunteer.krd</option>
+                    <option value="Jobs.krd">Jobs.krd</option>
+                    <option value="Climate.krd">Climate.krd</option>
+                    <option value="Empower.krd">Empower.krd</option>
+                </select>
+                <button onclick="loadItems()" class="refresh-btn">Refresh</button>
+            </div>
+            
+            <div id="itemsContainer" class="items-container">
+                <div class="loading">Loading items...</div>
+            </div>
+        </div>
+
+        <!-- Add Item Tab -->
+        <div id="addItemTab" class="tab-content">
+            <div class="form-container">
+                <h2>Add New Item</h2>
+                <form id="addItemForm">
+                    <div class="form-group">
+                        <label for="itemName">Item Name *</label>
+                        <input type="text" id="itemName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemId">Item ID</label>
+                        <input type="text" id="itemId">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="location">Location in Warehouse</label>
+                        <input type="text" id="location">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="entity">Entity *</label>
+                        <select id="entity" required>
+                            <option value="">Select Entity</option>
+                            <option value="Volunteer.krd">Volunteer.krd</option>
+                            <option value="Jobs.krd">Jobs.krd</option>
+                            <option value="Climate.krd">Climate.krd</option>
+                            <option value="Empower.krd">Empower.krd</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Item Types (optional)</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="Rollup"> Rollup</label>
+                            <label><input type="checkbox" value="Flex"> Flex</label>
+                            <label><input type="checkbox" value="Beach flag"> Beach flag</label>
+                            <label><input type="checkbox" value="Table flag"> Table flag</label>
+                            <label><input type="checkbox" value="Presidential flag"> Presidential flag</label>
+                            <label><input type="checkbox" value="Cups"> Cups</label>
+                            <label><input type="checkbox" value="T-shirts"> T-shirts</label>
+                            <label><input type="checkbox" value="Hats"> Hats</label>
+                            <label><input type="checkbox" value="Badges"> Badges</label>
+                            <label><input type="checkbox" value="Pins"> Pins</label>
+                            <label><input type="checkbox" value="Flyers"> Flyers</label>
+                            <label><input type="checkbox" value="Miscellaneous"> Miscellaneous</label>
+                            <label><input type="checkbox" value="Podiums"> Podiums</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <input type="text" id="category">
+                    </div>
+
+                    <button type="submit">Add Item</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Activity Log Tab -->
+        <div id="activityTab" class="tab-content">
+            <div class="activity-container">
+                <h2>Item Activity Log</h2>
+                <div id="activityList" class="activity-list">
+                    <div class="loading">Loading activity...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div id="editModal" class="modal hidden">
         <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Confirm Booking</h2>
-            <p id="modal-time-slot"></p>
-            <form id="booking-form">
+            <span class="close" onclick="closeEditModal()">&times;</span>
+            <h2>Edit Item</h2>
+            <form id="editItemForm">
+                <input type="hidden" id="editItemDocId">
+                
                 <div class="form-group">
-                    <label for="name">Your Name:</label>
-                    <input type="text" id="name" required>
+                    <label for="editItemName">Item Name *</label>
+                    <input type="text" id="editItemName" required>
                 </div>
+
                 <div class="form-group">
-                    <label for="project">Project:</label>
-                    <input type="text" id="project" required>
+                    <label for="editItemId">Item ID</label>
+                    <input type="text" id="editItemId">
                 </div>
-                <button type="submit">Confirm</button>
+
+                <div class="form-group">
+                    <label for="editNotes">Notes</label>
+                    <textarea id="editNotes" rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="editLocation">Location in Warehouse</label>
+                    <input type="text" id="editLocation">
+                </div>
+
+                <div class="form-group">
+                    <label for="editEntity">Entity *</label>
+                    <select id="editEntity" required>
+                        <option value="">Select Entity</option>
+                        <option value="Volunteer.krd">Volunteer.krd</option>
+                        <option value="Jobs.krd">Jobs.krd</option>
+                        <option value="Climate.krd">Climate.krd</option>
+                        <option value="Empower.krd">Empower.krd</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Item Types (optional)</label>
+                    <div class="checkbox-group" id="editItemTypes">
+                        <label><input type="checkbox" value="Rollup"> Rollup</label>
+                        <label><input type="checkbox" value="Flex"> Flex</label>
+                        <label><input type="checkbox" value="Beach flag"> Beach flag</label>
+                        <label><input type="checkbox" value="Table flag"> Table flag</label>
+                        <label><input type="checkbox" value="Presidential flag"> Presidential flag</label>
+                        <label><input type="checkbox" value="Cups"> Cups</label>
+                        <label><input type="checkbox" value="T-shirts"> T-shirts</label>
+                        <label><input type="checkbox" value="Hats"> Hats</label>
+                        <label><input type="checkbox" value="Badges"> Badges</label>
+                        <label><input type="checkbox" value="Pins"> Pins</label>
+                        <label><input type="checkbox" value="Flyers"> Flyers</label>
+                        <label><input type="checkbox" value="Miscellaneous"> Miscellaneous</label>
+                        <label><input type="checkbox" value="Podiums"> Podiums</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editCategory">Category</label>
+                    <input type="text" id="editCategory">
+                </div>
+
+                <button type="submit">Update Item</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Activity Modal -->
+    <div id="activityModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close" onclick="closeActivityModal()">&times;</span>
+            <h2 id="activityModalTitle">Item Activity</h2>
+            
+            <div class="activity-form">
+                <h3>Add Activity</h3>
+                <form id="activityForm">
+                    <input type="hidden" id="activityItemId">
+                    
+                    <div class="form-group">
+                        <label for="activityType">Activity Type</label>
+                        <select id="activityType" required>
+                            <option value="">Select Type</option>
+                            <option value="in">Put In</option>
+                            <option value="out">Took Out</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="activityDescription">Description</label>
+                        <textarea id="activityDescription" rows="3" required></textarea>
+                    </div>
+
+                    <button type="submit">Add Activity</button>
+                </form>
+            </div>
+
+            <div class="activity-history">
+                <h3>Activity History</h3>
+                <div id="itemActivityList"></div>
+            </div>
         </div>
     </div>
 
